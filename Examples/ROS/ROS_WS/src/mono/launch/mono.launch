@@ -1,0 +1,11 @@
+<launch>
+
+    <node pkg="mono" name="mono" type="mono" required="true" cwd="node">
+        <rosparam param="receive_topic" subst_value="true">/camera/image_raw</rosparam>
+        <rosparam param="query_topic" subst_value="true">/orbslam2/query</rosparam>
+        <rosparam param="response_topic" subst_value="true">/orbslam2/response</rosparam>
+        <rosparam param="vocabulary_file" subst_value="true">../../../../../../Vocabulary/ORBvoc.txt</rosparam>
+        <rosparam param="settings_file" subst_value="true">../../../src/tx2_camera/TX2CAMERA.yaml</rosparam>
+    </node>
+
+</launch>

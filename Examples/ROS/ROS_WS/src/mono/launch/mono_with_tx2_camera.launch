@@ -1,0 +1,23 @@
+<launch>
+    <arg name="camera_topic" default="/camera/image_raw"/>
+    <arg name="query_topic" default="/orbslam2/query"/>
+    <arg name="response_topic" default="/orbslam2/response"/>
+
+    <node pkg="mono" name="mono" type="mono" required="true" cwd="node">
+        <rosparam param="receive_topic" subst_value="true">$(arg camera_topic)</rosparam>
+        <rosparam param="query_topic" subst_value="true">$(arg query_topic)</rosparam>
+        <rosparam param="response_topic" subst_value="true">$(arg response_topic)</rosparam>
+        <rosparam param="vocabulary_file" subst_value="true">../../../../../../Vocabulary/ORBvoc.txt</rosparam>
+        <rosparam param="settings_file" subst_value="true">../../../src/tx2_camera/TX2CAMERA.yaml</rosparam>
+    </node>
+    
+    <include file="$(find tx2_camera)/launch/tx2_camera.launch">    
+        <arg name="camera_topic" value="$(arg camera_topic)"/>
+    </include>
+    
+    <include file="$(find orb_controller)/launch/controller.launch">
+        <arg name="query_topic" value="$(arg query_topic)"/>
+        <arg name="response_topic" value="$(arg response_topic)"/>
+    </include>
+
+</launch>

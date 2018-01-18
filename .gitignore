@@ -1,0 +1,13 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+bin/*
+build*/*
+lib/*
+Thirdparty/DBoW2/lib/*
+Thirdparty/DBoW2/build*/*
+Thirdparty/g2o/lib/*
+Thirdparty/g2o/build*/*
+Vocabulary/ORBvoc.txt
+Examples/ROS/ROS_WS/build/*
+Examples/ROS/ROS_WS/devel/*
+Examples/ROS/ROS_WS/src/CMakeLists.txt
+.vscode/

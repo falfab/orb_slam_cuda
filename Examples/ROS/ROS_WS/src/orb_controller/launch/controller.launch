@@ -1,0 +1,12 @@
+<launch>
+
+    <arg name="query_topic" default="/orbslam2/query"/>
+    <arg name="response_topic" default="/orbslam2/response"/>
+
+    <!-- Orb-slam Controller -->
+    <node pkg="orb_controller" name="orb_controller" type="orb_controller" required="true" cwd="node">
+        <rosparam param="query_topic" subst_value="true">$(arg query_topic)</rosparam>
+        <rosparam param="response_topic" subst_value="true">$(arg response_topic)</rosparam>
+    </node>
+
+</launch>

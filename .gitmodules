@@ -1,0 +1,7 @@
+[submodule "Thirdparty/pba"]
+	path = Thirdparty/pba
+	url = https://github.com/falfab/pba
+
+[submodule "Thirdparty/gscam"]
+	path = Thirdparty/gscam
+	url = https://github.com/ros-drivers/gscam

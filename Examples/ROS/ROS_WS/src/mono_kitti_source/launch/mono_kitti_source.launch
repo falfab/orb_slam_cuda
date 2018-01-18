@@ -1,0 +1,11 @@
+<launch>
+    <arg name="send_topic" default="/camera/image_raw"/>
+    <arg name="sequence_number"/>
+    <arg name="sequences_folder"/>
+
+    <node pkg="mono_kitti_source" name="mono_kitti_source" type="mono_kitti_source" required="true" cwd="node">
+        <rosparam param="send_topic" subst_value="true">$(arg send_topic)</rosparam>
+        <rosparam param="sequence_path" subst_value="true">$(arg sequences_folder)/$(arg sequence_number)</rosparam>
+    </node>
+
+</launch>
