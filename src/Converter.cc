@@ -148,22 +148,9 @@ std::vector<float> Converter::toQuaternion(const cv::Mat &M)
     return v;
 }
 
-//vector<MapPoint *> mpOrdered;   //variabile globale   //errore, va gestita la concorrenza tra le chiamate
 // PBA conversion methods
 std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &vpKFs, vector<MapPoint *> &vpMP, vector<MapPoint *> &mpOrdered)
 {
-    /*
-    idea: aggiungo i punti in un nuovo vector in modo univoco, e nel file da stampare uso la posizione dei punti nel vector
-    
-    -la posizione nel vector e' il nuovo id del punto, salvo nel vector il puntatore al MapPoint
-    -non serve utilizzare una Map
-    -si potrebbe fare quando si scorrono i MapPoint nei Keyframe, in modo da avere solo i punti effettivamente usati (si)
-    
-    -bisogna rendere il vector globale, gestire la concorrenza, ... in modo che il file di ritorno da pba possa
-     essere reinterpretato correttamente
-    --se alla fine sara' una chiamata unica (generazione file - pba - lettura risultati) e' necessario rendere il vector globale??? 
-    */
-
     int num_observation = 0;
 
     // Utilizzo vector al posto di cv::Mat per migliore gestione della memoria.
@@ -171,7 +158,6 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
     vector<vector<float>> pVcops; // matrice delle opzioni camera
     int kfBadCount = 0;
     int mpBadCount = 0;
-    //vector<MapPoint *> mpOrdered;
 
     //////////////////////////////////////////////////////////////////
     // VALORI CAMERE //
@@ -179,7 +165,7 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
     for (size_t i = 0; i < vpKFs.size(); i++)
     {
         KeyFrame *pKf = vpKFs[i];
-        if (pKf->isBad()) //-----------------------------------------------------------------------------------
+        if (pKf->isBad())
         {
             kfBadCount++;
             continue;
@@ -205,7 +191,7 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
         // per ogni map point associato al keyframe
         for (auto mp : pKf->GetMapPoints())
         {
-            if (mp->isBad()) //---------------------------------------------------------------------------
+            if (mp->isBad())
             {
                 mpBadCount++;
                 continue;
@@ -213,7 +199,7 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
 
             // VALORI MAP POINT //
             int mpPos;
-            //mpOrdered.clear();  //svuoto il vector    //usato con la variabile globale
+
             //se il punto non e' contenuto nel vector, lo aggiungo in coda
             auto mpIterator = std::find(mpOrdered.begin(), mpOrdered.end(), mp);
             if (mpIterator == mpOrdered.end())
@@ -236,7 +222,6 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
             float focal_length = pKf->mK.at<float>(0, 0);
             cv::Mat pf = focal_length * p;
             num_observation++;
-            //vector<float> pVob = {i, mp->mnId, pf.at<float>(0, 0), pf.at<float>(1, 0)};
             vector<float> pVob = {i, mpPos, pf.at<float>(0, 0), pf.at<float>(1, 0)};
             pVobs.push_back(pVob);
         }
@@ -246,9 +231,6 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
     std::vector<std::vector<float>> vPba;
 
     // <num_cameras> <num_points> <num_observations>
-    //std::vector<float> vParams = {vpKFs.size(),
-    //                              vpMP.size(),
-    //                              num_observation};
     std::vector<float> vParams = {vpKFs.size(), mpOrdered.size(), num_observation};
 
     vPba.push_back(vParams);
@@ -264,7 +246,7 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
         vPba.push_back(vf);
     }
     // <point_1> ... <point_n>
-    for (MapPoint *mp : mpOrdered) //-------------------------------------------------------
+    for (MapPoint *mp : mpOrdered)
     {
         cv::Mat coord = mp->GetWorldPos();
         std::vector<float> vMp;
@@ -274,30 +256,10 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrix(vector<KeyFrame *> &v
         }
         vPba.push_back(vMp);
     }
-    /*for (MapPoint *mp : vpMP)
-    {
-        if (mp->isBad())//------------------------------------------------------------------
-        {
-            mpBadCount++;
-            continue;
-        }
-        cv::Mat coord = mp->GetWorldPos();
-        std::vector<float> vMp;
-        for (int i = 0; i < 3; i++)
-        {
-            vMp.push_back(coord.at<float>(i, 0));
-        }
-        vPba.push_back(vMp);
-    }*/
-    std::cout << "badKF: " << kfBadCount << " --- bad MP: " << mpBadCount << std::endl;
-
-    //std::cout << "-----_TEST_-----" << std::endl;
-    //dataFromPbaFile("pba_example.txt", vpKFs, vpMP, mpOrdered);
-
     return vPba;
 }
 
-
+// Come il metodo sopra, pero ordina i dati per l'id del map point
 std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFrame *> &vpKFs, vector<MapPoint *> &vpMP)
 {
     // Utilizzo vector al posto di cv::Mat per migliore gestione della memoria.
@@ -305,14 +267,13 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFram
     vector<vector<float>> pVcops; // matrice delle opzioni camera
     int kfBadCount = 0;
     int mpBadCount = 0;
-    //vector<MapPoint *> mpOrdered;
 
     // VALORI CAMERE //
     // per ogni frame (ad ogni frame corrisponde una camera)
     for (size_t i = 0; i < vpKFs.size(); i++)
     {
         KeyFrame *pKf = vpKFs[i];
-        if (pKf->isBad()) //-----------------------------------------------------------------------------------
+        if (pKf->isBad())
         {
             kfBadCount++;
             continue;
@@ -334,27 +295,26 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFram
                                0, 0};
         pVcops.push_back(pVcop);
     }
-    
+
     // VALORI OSSERVAZIONI //
     //osservazioni già disponibili a quanto pare...
     for (size_t i = 0; i < vpMP.size(); i++)
     {
         MapPoint *pMP = vpMP[i];
-        if (pMP->isBad()){
+        if (pMP->isBad())
+        {
             mpBadCount++;
             continue;
         }
-        
+
         const map<KeyFrame *, size_t> observations = pMP->GetObservations();
-        
+
         for (map<KeyFrame *, size_t>::const_iterator mit = observations.begin(); mit != observations.end(); mit++)
         {
             KeyFrame *pKF = mit->first;
             if (pKF->isBad())
                 continue;
 
-            //const cv::KeyPoint &kpUn = pKF->mvKeysUn[mit->second];    //osservazioni diverse da quelle calcolate per PBA...
-            
             //creazione delle osservazioni con le formule fornite da PBA
             cv::Mat pRm = pKF->GetRotation();
             cv::Mat pTv = pKF->GetTranslation();
@@ -365,13 +325,13 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFram
             cv::Mat p = -P / P.at<float>(2, 0);
             float focal_length = pKF->mK.at<float>(0, 0);
             cv::Mat pf = focal_length * p;
-            
+
             //idea: le camere sono meno dei punti, conviene scorrere queste
             for (size_t j = 0; j < vpKFs.size(); j++)
             {
                 KeyFrame *kf = vpKFs[j];
-                if(kf->mnId == pKF->mnId){
-                    //vector<float> pVob = {j, i, kpUn.pt.x, kpUn.pt.y};
+                if (kf->mnId == pKF->mnId)
+                {
                     vector<float> pVob = {j, i, pf.at<float>(0, 0), pf.at<float>(1, 0)};
                     pVobs.push_back(pVob);
                     break;
@@ -379,9 +339,7 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFram
             }
         }
     }
-    
-    
-    
+
     // the return matrix
     std::vector<std::vector<float>> vPba;
 
@@ -411,11 +369,9 @@ std::vector<std::vector<float>> Converter::toPbaDataMatrixMpOrder(vector<KeyFram
         }
         vPba.push_back(vMp);
     }
-    std::cout << "badKF: " << kfBadCount << " --- bad MP: " << mpBadCount << std::endl;
 
     return vPba;
 }
-
 
 void Converter::dataFromPbaFile(char file_name[], vector<KeyFrame *> &vpKFs, vector<MapPoint *> &vpMP, vector<MapPoint *> &mpOrdered)
 {
@@ -434,8 +390,6 @@ void Converter::dataFromPbaFile(char file_name[], vector<KeyFrame *> &vpKFs, vec
             int idKF, idMP;
             float xn, yn;
             file >> idKF >> idMP >> xn >> yn;
-            std::cout << idKF << " " << idMP << " " << xn << " " << yn << std::endl;
-
             i++;
         }
 
@@ -447,7 +401,7 @@ void Converter::dataFromPbaFile(char file_name[], vector<KeyFrame *> &vpKFs, vec
             float t1, t2, t3;
             float f, k1, k2;
             file >> r1 >> r2 >> r3 >> t1 >> t2 >> t3 >> f >> k1 >> k2;
-            std::cout << r1 << " " << r2 << " " << r3 << " " << t1 << " " << t2 << " " << t3 << " " << f << " " << k1 << " " << k2 << std::endl;
+            // std::cout << r1 << " " << r2 << " " << r3 << " " << t1 << " " << t2 << " " << t3 << " " << f << " " << k1 << " " << k2 << std::endl;
 
             cv::Mat rotVec = (cv::Mat_<float>(3, 1) << t1, t2, t3); //salvo le rotazioni in un vettore
             cv::Mat rotMat = cv::Mat::zeros(4, 4, CV_64F);
@@ -458,53 +412,16 @@ void Converter::dataFromPbaFile(char file_name[], vector<KeyFrame *> &vpKFs, vec
             //[---------|-----------]
             //[  0 0 0  |     1     ]
 
-            //così non va...
-            /*cv::Mat pose = cv::Mat::zeros(4, 4, CV_64F);
-            pose.at<int>(0, 0) = 0;
-            pose.at<int>(0, 1) = 1;
-            pose.at<int>(0, 2) = 2;
-            pose.at<int>(1, 0) = 3;
-            pose.at<int>(1, 1) = 4;
-            pose.at<int>(1, 2) = 5;
-            pose.at<int>(2, 0) = 6;
-            pose.at<int>(2, 1) = 7;
-            pose.at<int>(2, 2) = 8;
-            pose.at<int>(0, 3) = 10;
-            pose.at<int>(1, 3) = 11;
-            pose.at<int>(2, 3) = 12;
-            pose.at<int>(3, 0) = 20;
-            pose.at<int>(3, 1) = 21;
-            pose.at<int>(3, 2) = 22;
-            pose.at<int>(3, 3) = 23;*/
-
-            //...così si
-            //cv::Mat pose = (cv::Mat_<float>(4,4) << 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-
             cv::Mat poseMat = (cv::Mat_<float>(4, 4) << rotMat.at<float>(0, 0), rotMat.at<float>(0, 1), rotMat.at<float>(0, 2), t1,
                                rotMat.at<float>(1, 0), rotMat.at<float>(1, 1), rotMat.at<float>(1, 2), t2,
                                rotMat.at<float>(2, 0), rotMat.at<float>(2, 1), rotMat.at<float>(2, 2), t3,
                                0, 0, 0, 1);
 
             //ci sono piccole differenze nella stampa usando i due metodi qui sotto... per arrotondamenti diversi
-            std::cout << "poseMat: " << poseMat << std::endl;
-            std::cout << "poseMat(0, 0): " << poseMat.at<float>(0, 0) << std::endl;
-            std::cout << "poseMat(1, 3): " << poseMat.at<float>(1, 3) << std::endl;
-            std::cout << "poseMat(3, 3): " << poseMat.at<float>(3, 3) << std::endl;
-
-            /*KeyFrame *pKF = vpKFs[i-1]; //il vettore parte da zero!
-            if (pKF->isBad())
-                continue;
-            if (nLoopKF == 0)
-            {
-                pKF->SetPose(poseMat);
-            }
-            else
-            {
-                pKF->mTcwGBA.create(4, 4, CV_32F);
-                poseMat.copyTo(pKF->mTcwGBA);
-                pKF->mnBAGlobalForKF = nLoopKF;
-            }*/
-
+            // std::cout << "poseMat: " << poseMat << std::endl;
+            // std::cout << "poseMat(0, 0): " << poseMat.at<float>(0, 0) << std::endl;
+            // std::cout << "poseMat(1, 3): " << poseMat.at<float>(1, 3) << std::endl;
+            // std::cout << "poseMat(3, 3): " << poseMat.at<float>(3, 3) << std::endl;
             i++;
         }
 
@@ -515,54 +432,13 @@ void Converter::dataFromPbaFile(char file_name[], vector<KeyFrame *> &vpKFs, vec
             float x, y, z;
             file >> x >> y >> z;
             std::cout << x << " " << y << " " << z << std::endl;
-
-            /*if (vbNotIncludedMP[i-1])
-                continue;
-
-            MapPoint *pMP = vpMP[i-1];  //il vettore parte da zero!
-
-            if (pMP->isBad())
-                continue;
-            g2o::VertexSBAPointXYZ *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(pMP->mnId + maxKFid + 1));
-
-            if (nLoopKF == 0)
-            {
-                pMP->SetWorldPos((cv::Mat_<float>(3,1) << x, y, z));
-                pMP->UpdateNormalAndDepth();
-            }
-            else
-            {
-                pMP->mPosGBA.create(3, 1, CV_32F);
-                (cv::Mat_<float>(3,1) << x, y, z).copyTo(pMP->mPosGBA);
-                pMP->mnBAGlobalForKF = nLoopKF;
-            }*/
-
             i++;
         }
         file.close();
     }
     else
         cout << "Unable to open file";
-
-    //per i parametri delle camere basta riusare la funzione
-    //cv::Rodrigues(pRm, pRv);
-    //fa la conversione da 3x3 a 3x1 e vice versa!
-
-    //per map point in teoria basta riportare i valori modificati in fondo al file (ordine?)
 }
-
-//std::vector<cv::Mat> Converter::keyframeFromPbaFile(char file_name[]){}
-
-/*std::vector<float> Converter::getConfigFromPbaFile(char file_name[])
-{
-    char buffer[];
-    std::ifstream file(file_name);
-    if (file.is_open())
-    {
-        // leggo la prima riga per estrarre le configurazioni del file
-        float nKeyframes, nMapPoints, nObservations;
-        }
-}*/
 
 void Converter::printPbaMatrixToFile(std::vector<std::vector<float>> &vPba, char file_name[])
 {

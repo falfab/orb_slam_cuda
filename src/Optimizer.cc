@@ -35,7 +35,6 @@
 #include <mutex>
 
 #define PRINT_PBA_FILE
-//#define PRINT_PBA_FILE_LOCAL //non va
 
 namespace ORB_SLAM2
 {
@@ -73,13 +72,16 @@ void Optimizer::GlobalBundleAdjustemnt(Map *pMap, int nIterations, bool *pbStopF
     snprintf(pba_exec, sizeof(pba_exec), "../../Thirdparty/pba/bin/pba_driver global_bundles/global_bundles%05d.txt -out global_bundles/global_bundles_pba%05d.txt", ccall, ccall);
     system(pba_exec);
 
+    //--- parte non completata
     //pba eseguito, si puo' importare il file di output
     //char file_name_pba[50]; // make sure it's big enough
     //snprintf(file_name_pba, sizeof(file_name_pba), "global_bundles/global_bundles_pba%05d.txt", ccall);
     //Converter::dataFromPbaFile(file_name_pba, vpKFs, vpMP, mpOrdered);
 #endif
+    //esecuzione del bundle adjustment su g2o
     BundleAdjustment(vpKFs, vpMP, nIterations, pbStopFlag, nLoopKF, bRobust);
 #ifdef PRINT_PBA_FILE
+    //scrittura su file dell'ottimizzazione fatta da g2o
     mpOrdered.clear();
     vector<vector<float>> vPbaf = Converter::toPbaDataMatrix(vpKFs, vpMP, mpOrdered);
     char file_namef[50]; // make sure it's big enough
@@ -134,8 +136,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap();
             vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
 
-            // std::cout << "-------------" << vSE3-> << std::endl;
-
             vSE3->setId(pKF->mnId);
             vSE3->setFixed(pKF->mnId == 0);
             optimizer.addVertex(vSE3);
@@ -184,7 +184,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
                 const cv::KeyPoint &kpUn = pKF->mvKeysUn[mit->second];
 
-                // ---------------------------------------- SIAMO ARRIVATI QUI COL CONTROLLO ----------------------------------------
                 // std::cout << "-- kpUn| .pt.x: " << kpUn.pt.x << " | .pt.y: " << kpUn.pt.y << " | .octave: " << kpUn.octave << std::endl;
                 // std::cout << "-- mit->second: " << mit->second << std::endl;
                 // std::cout << "-- pKF->mvuRight[mit->second]: " << pKF->mvuRight[mit->second] << std::endl;
@@ -200,8 +199,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
                     e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pKF->mnId)));
                     e->setMeasurement(obs);
                     const float &invSigma2 = pKF->mvInvLevelSigma2[kpUn.octave];
-
-                    // std::cout << "invSigma2: " << invSigma2 << std::endl;
 
                     e->setInformation(Eigen::Matrix2d::Identity() * invSigma2);
 
@@ -291,7 +288,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             g2o::SE3Quat SE3quat = vSE3->estimate();
             if (nLoopKF == 0)
             {
-                //std::cout << "kf toCvMat: " << Converter::toCvMat(SE3quat) << std::endl;
                 pKF->SetPose(Converter::toCvMat(SE3quat));
             }
             else
@@ -322,7 +318,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
             if (nLoopKF == 0)
             {
-                //std::cout << "mp toCvMat: " << Converter::toCvMat(vPoint->estimate()) << std::endl;
                 pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
                 pMP->UpdateNormalAndDepth();
             }
@@ -614,28 +609,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *pMap
             }
         }
     }
-
-#ifdef PRINT_PBA_FILE_LOCAL
-    system("mkdir -p ./local_bundles");
-    char file_name[50]; // make sure it's big enough
-    snprintf(file_name, sizeof(file_name), "local_bundles/local_bundle_%05d.txt", lcall);
-    //vector<vector<float>> vPba = Converter::toPbaDataMatrix(lLocalKeyFrames, lLocalMapPoints);
-    //Converter::printPbaMatrixToFile(vPba, file_name);
-    lcall++;
-#endif
-#ifdef PRINT_PBA_FILE_LOCAL
-    system("mkdir -p ./local_bundles");
-    char file_name[50]; // make sure it's big enough
-    snprintf(file_name, sizeof(file_name), "local_bundles/local_bundle_%05d.txt", lcall);
-    //vector<vector<float>> vPba = Converter::toPbaDataMatrix(lLocalKeyFrames, lLocalMapPoints);
-    //Converter::printPbaMatrixToFile(vPba, file_name);
-
-    char file_namef[50]; // make sure it's big enough
-    snprintf(file_namef, sizeof(file_name), "local_bundles/local_bundle_finish%05d.txt", lcall);
-    //vector<vector<float>> vPbaf = Converter::toPbaDataMatrix(lLocalKeyFrames, lLocalMapPoints);
-    //Converter::printPbaMatrixToFile(vPbaf, file_namef);
-    lcall++;
-#endif
 
     // Setup optimizer
     g2o::SparseOptimizer optimizer;
